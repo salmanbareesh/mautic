@@ -81,21 +81,78 @@ class DashboardSubscriber extends MainDashboardSubscriber
             }
 
             if (!$event->isCached()) {
+                $chartData = $this->leadModel->getLeadsLineChartData(
+                    $params['timeUnit'],
+                    $params['dateFrom'],
+                    $params['dateTo'],
+                    $params['dateFormat'],
+                    $params['filter'],
+                    $canViewOthers
+                );
+
+                $interval  = $params['dateFrom']->diff($params['dateTo']);
+                $totalDays = $interval->days + 1; // +1 to include the last day
+
+                $previousDateTo   = clone $params['dateFrom'];
+                $previousDateFrom = (clone $previousDateTo)->sub($interval);
+
+                $previousPeriodData = $this->leadModel->getLeadsLineChartData(
+                    $params['timeUnit'],
+                    $previousDateFrom,
+                    $previousDateTo,
+                    $params['dateFormat'],
+                    $params['filter'],
+                    $canViewOthers
+                );
+
+                $currentTotal  = array_sum($chartData['datasets'][0]['data']);
+                $previousTotal = array_sum($previousPeriodData['datasets'][0]['data']);
+
+                $growthRate = 0;
+                if (0 != $previousTotal) {
+                    $growthRate = (($currentTotal - $previousTotal) / $previousTotal) * 100;
+                }
+
+                // Volatility
+                $data          = $chartData['datasets'][0]['data'];
+                $maxLead       = max($data);
+                $minLead       = min(array_filter($data, fn ($val) => $val > 0) ?: [0]);
+                $avgDailyLeads = $currentTotal / $totalDays;
+
+                $leadVolatility = 0;
+                if ($avgDailyLeads > 0) {
+                    $leadVolatility = ($maxLead - $minLead) / $avgDailyLeads * 100;
+                }
+
+                // Standard Deviation
+                $mean         = array_sum($data) / count($data);
+                $sumOfSquares = array_reduce($data, function ($carry, $item) use ($mean) {
+                    return $carry + pow($item - $mean, 2);
+                }, 0);
+                $standardDeviation = sqrt($sumOfSquares / count($data));
+
                 $event->setTemplateData([
-                    'chartType'   => 'line',
-                    'chartHeight' => $widget->getHeight() - 80,
-                    'chartData'   => $this->leadModel->getLeadsLineChartData(
-                        $params['timeUnit'],
-                        $params['dateFrom'],
-                        $params['dateTo'],
-                        $params['dateFormat'],
-                        $params['filter'],
-                        $canViewOthers
-                    ),
+                    'chartType'          => 'line',
+                    'chartHeight'        => $widget->getHeight() - 80,
+                    'chartData'          => $chartData,
+                    'previousPeriodData' => $previousPeriodData,
+                    'showTotal'          => 'true',
+                    'showComparison'     => 'true',
+                    'dateFrom'           => $params['dateFrom']->format('Y-m-d'),
+                    'dateTo'             => $params['dateTo']->format('Y-m-d'),
+                    'totalDays'          => $totalDays,
+                    'currentTotal'       => $currentTotal,
+                    'previousTotal'      => $previousTotal,
+                    'avgDailyLeads'      => $avgDailyLeads,
+                    'growthRate'         => $growthRate,
+                    'leadVolatility'     => $leadVolatility,
+                    'maxLead'            => $maxLead,
+                    'minLead'            => $minLead,
+                    'standardDeviation'  => $standardDeviation,
                 ]);
             }
 
-            $event->setTemplate('@MauticCore/Helper/chart.html.twig');
+            $event->setTemplate('@MauticLead/Widget/created_leads_in_time.html.twig');
             $event->stopPropagation();
 
             return;

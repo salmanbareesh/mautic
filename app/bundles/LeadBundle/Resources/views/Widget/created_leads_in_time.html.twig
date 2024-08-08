@@ -1,0 +1,403 @@
+{#
+Variables
+- chartType
+- chartHeight
+- chartData
+- previousPeriodData
+- showTotal
+- showComparison
+- dateFrom
+- dateTo
+- totalDays
+- currentTotal
+- previousTotal
+- avgDailyLeads
+- growthRate
+#}
+
+{% if chartType is defined and chartData is defined and chartData.datasets is defined and chartData.datasets[0].data is
+defined %}
+
+{% if currentTotal > 0 %}
+<!-- Total count -->
+{% if showTotal is defined %}
+<div class="text-right mt-2 mr-md">
+    <span class="fs-36 fw-t">{{ currentTotal }} {{'mautic.dashboard.widget.total'|trans}}</span>
+</div>
+{% set chartHeight = chartHeight - 60 %}
+{% endif %}
+<!--/ Total count -->
+
+<!-- Comparison with previous period -->
+{% if previousPeriodData is defined and previousPeriodData.datasets is defined and previousPeriodData.datasets[0].data
+is defined %}
+{% set currentDataValues = chartData.datasets[0].data %}
+{% set previousDataValues = previousPeriodData.datasets[0].data %}
+
+<div class="d-flex gap-xs jc-end text-right mt-2 mr-md">
+    {% if previousTotal != currentTotal %}
+    {% if previousTotal == 0 and currentTotal > 0 %}
+    <i class="ri-arrow-up-line text-success"></i>
+    <span>{{'mautic.dashboard.widget.stats.increased'|trans}} {{currentTotal}}</span>
+    {% elseif previousTotal > 0 %}
+    {% set percentageChange = ((currentTotal - previousTotal) / previousTotal * 100)|round(2) %}
+    {% if percentageChange > 0 %}
+    <span class="fw-sb">{{ percentageChange }}%</span>
+    <i class="text-success ri-arrow-up-line"></i>
+    {% else %}
+    <span class="fw-sb">{{ percentageChange|abs }}%</span>
+    <i class="text-danger ri-arrow-down-line"></i>
+    {% endif %}
+    <span>{{'mautic.dashboard.widget.stats.comparison'|trans}}</span>
+    {% else %}
+    <span class="text-danger">{{'mautic.dashboard.widget.stats.decreased'|trans}}</span>
+    {% endif %}
+    {% else %}
+    <span class="text-info">{{'mautic.dashboard.widget.stats.same'|trans}}</span>
+    {% endif %}
+</div>
+{% endif %}
+<!--/ Comparison with previous period -->
+
+{% set dateRange = '' %}
+{% if totalDays <= 7 %} {% set dateRange='week' %} {% elseif totalDays <=31 %} {% set dateRange='month' %} {% else %} {%
+    set dateRange='year' %} {% endif %} <div class="dropdown slug {% if dateRange=='year' %}hide{% endif %}">
+    <a class="dropdown-toggle slug-button slug-default" size="2xs" data-toggle="dropdown" href="#">
+        {{ 'mautic.widget.created_leads_in_time.mi'|trans }}
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-right bdr-w-0 shd-none">
+        <div class="tile tile-slug tile-popover">
+            <!-- Starts MI content -->
+            <div class="text-muted mb-sm">{{ 'mautic.widget.created_leads_in_time.mi_explained'|trans }}</div>
+            <div class="h2 mb-sm">{{ 'mautic.widget.created_leads_in_time.lead_generation_analysis'|trans }}</div>
+
+            {% if dateRange=='month' %} <div class="text-muted mb-sm">
+                {% if chartData.datasets[0].data is defined and chartData.labels is defined %}
+                {% set bestDayIndex = 0 %}
+                {% set bestDayValue = 0 %}
+                {% for index, value in chartData.datasets[0].data %}
+                {% if value > bestDayValue %}
+                {% set bestDayIndex = index %}
+                {% set bestDayValue = value %}
+                {% endif %}
+                {% endfor %}
+
+                {% if bestDayValue > 0 %}
+                {% set bestDate = chartData.labels[bestDayIndex] %}
+                {% set bestDay = bestDate|date('d') %}
+                <div class="tip">
+                    {{ 'mautic.widget.created_leads_in_time.best_day'|trans({
+                    '%day%': bestDay,
+                    '%leads%': bestDayValue|round(0)
+                    }) }}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+            <hr>
+
+            <div class="monthly-metrics">
+                <div class="h4 mb-sm">{{ 'mautic.widget.created_leads_in_time.monthly_insights'|trans }}</div>
+
+                <!-- High performance days -->
+                {# Set a threshold for "high performance" (now 50% above average) #}
+                {% set highPerformanceThreshold = avgDailyLeads * 1.5 %}
+                {% set highPerformanceDays = 0 %}
+                {% for dailyValue in chartData.datasets[0].data %}
+                {% if dailyValue > highPerformanceThreshold %}
+                {% set highPerformanceDays = highPerformanceDays + 1 %}
+                {% endif %}
+                {% endfor %}
+                {% set highPerformancePercentage = (highPerformanceDays / totalDays * 100)|round(1) %}
+
+                <div class="smart-tips">
+                    <div id="high-performance-days">
+                        <p>
+                            {{ 'mautic.widget.created_leads_in_time.high_performance_days_message'|trans({
+                            '%count%': highPerformanceDays,
+                            '%percentage%': highPerformancePercentage
+                            }) }}
+                            {% if highPerformanceDays >= 3 %}
+                            {{ 'mautic.widget.created_leads_in_time.great_job'|trans }}
+                            {% elseif highPerformanceDays > 0 %}
+                            {{ 'mautic.widget.created_leads_in_time.good_work'|trans }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Growth stability -->
+                <div class="mb-sm">
+                    {% set growthThreshold = 10 %} {# Define the threshold for significant growth/decline #}
+
+                    {% if growthRate == 0 %}
+                    <div>
+                        <i class="ri-equals-line"></i>
+                        {{ 'mautic.widget.created_leads_in_time.no_change_message'|trans }}
+                    </div>
+                    {% elseif growthRate|abs >= growthThreshold %}
+                    <div>
+                        <i class="{% if growthRate > 0 %}ri-arrow-up-line{% else %}ri-arrow-down-line{% endif %}"></i>
+                        {% if growthRate > 0 %}
+                        <strong>{{ 'mautic.widget.created_leads_in_time.growth_alert'|trans }}:</strong>
+                        {{ 'mautic.widget.created_leads_in_time.growth_message'|trans({'%rate%': growthRate|round(2)})
+                        }}
+                        {% if growthRate >= 50 %}
+                        {{ 'mautic.widget.created_leads_in_time.exceptional_growth'|trans }}
+                        {% elseif growthRate >= 25 %}
+                        {{ 'mautic.widget.created_leads_in_time.significant_improvement'|trans }}
+                        {% else %}
+                        {{ 'mautic.widget.created_leads_in_time.keep_up'|trans }}
+                        {% endif %}
+                        {% else %}
+                        <strong>{{ 'mautic.widget.created_leads_in_time.decline_alert'|trans }}:</strong>
+                        {{ 'mautic.widget.created_leads_in_time.decline_message'|trans({'%rate%':
+                        growthRate|abs|round(2)}) }}
+                        {% if growthRate|abs >= 50 %}
+                        {{ 'mautic.widget.created_leads_in_time.significant_drop'|trans }}
+                        {% elseif growthRate|abs >= 25 %}
+                        {{ 'mautic.widget.created_leads_in_time.decline_attention'|trans }}
+                        {% else %}
+                        {{ 'mautic.widget.created_leads_in_time.review_activities'|trans }}
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div>
+                        <i class="ri-information-2-line"></i>
+                        <strong>{{ 'mautic.widget.created_leads_in_time.steady_performance'|trans }}:</strong>
+                        {{ 'mautic.widget.created_leads_in_time.stable_message'|trans({'%rate%': growthRate|round(2)})
+                        }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Volatility -->
+                <div class="smart-tips">
+                    {% if leadVolatility is defined and leadVolatility > 0 %}
+                    <div id="lead-volatility">
+                        {% if leadVolatility > 100 %}
+                        {{ 'mautic.widget.created_leads_in_time.high_volatility'|trans({'%maxLead%': maxLead,
+                        '%minLead%': minLead}) }}
+                        {% elseif leadVolatility > 50 %}
+                        {{ 'mautic.widget.created_leads_in_time.moderate_volatility'|trans }}
+                        {% else %}
+                        {{ 'mautic.widget.created_leads_in_time.low_volatility'|trans }}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Generated leads (average) -->
+                {% set avgDailyLeads = currentTotal / totalDays %}
+                <div class="mt-md mb-xs">
+                    <i class="ri-contacts-book-upload-line ri-lg"></i>
+                    <strong>{{ 'mautic.widget.created_leads_in_time.average_daily_lead_generation'|trans }}</strong>: {{
+                    avgDailyLeads|round(2) }}
+                </div>
+
+                <!-- Standard deviation -->
+                <div class="mb-xs">
+                    <i class="ri-line-chart-line ri-xl"></i>
+                    <strong>{{ 'mautic.widget.created_leads_in_time.standard.deviation'|trans }}</strong>
+                    <i class="ri-question-line" data-toggle="tooltip" data-placement="top"
+                        title="{{ 'mautic.widget.created_leads_in_time.standard.deviation.tooltip'|trans }}"></i>:
+                    ±{{ standardDeviation|round(0, 'floor') }}
+                </div>
+                <!--/ Standard deviation -->
+
+            </div>
+
+            <!-- Start weekly insights -->
+            {% elseif dateRange == 'week' %}
+
+            <!-- Best day of the week -->
+            {% set dailyTotals = {} %}
+            {% set daysCounted = {} %}
+
+            {% for date, value in chartData.datasets[0].data %}
+            {% set dayOfWeek = date|date('l') %} {# This returns the full name of the day #}
+            {% if dailyTotals[dayOfWeek] is not defined %}
+            {% set dailyTotals = dailyTotals|merge({(dayOfWeek): 0}) %}
+            {% set daysCounted = daysCounted|merge({(dayOfWeek): 0}) %}
+            {% endif %}
+            {% set dailyTotals = dailyTotals|merge({(dayOfWeek): dailyTotals[dayOfWeek] + value}) %}
+            {% set daysCounted = daysCounted|merge({(dayOfWeek): daysCounted[dayOfWeek] + 1}) %}
+            {% endfor %}
+
+            {% set bestDay = '' %}
+            {% set bestDayAvg = 0 %}
+            {% for day, total in dailyTotals %}
+            {% set avg = daysCounted[day] > 0 ? (total / daysCounted[day])|round(0, 'floor') : 0 %}
+            {% if avg > bestDayAvg %}
+            {% set bestDay = day %}
+            {% set bestDayAvg = avg %}
+            {% endif %}
+            {% endfor %}
+
+            <div class="text-muted">
+                {% if bestDay != '' %}
+                <p>{{ 'mautic.widget.created_leads_in_time.best_day.result'|trans({'%day%': bestDay, '%avg%':
+                    bestDayAvg})
+                    }}</p>
+                {% else %}
+                <p>{{ 'mautic.widget.created_leads_in_time.best_day.no_result'|trans }}</p>
+                {% endif %}
+            </div>
+            <hr>
+            <div class="weekly-metrics">
+                <div class="h4 mb-sm">{{ 'mautic.widget.created_leads_in_time.weekly_insights'|trans }}</div>
+
+                <!-- Checks if worst day last week is the same this week -->
+                {# Find the worst days of the week for the current period #}
+                {% set worstDaysCurrent = [] %}
+                {% set lowestCount = null %}
+
+                {% for i in 0..(chartData.datasets[0].data|length - 1) %}
+                {% set count = chartData.datasets[0].data[i] %}
+                {% set date = chartData.labels[i] %}
+                {% set dayName = date|date('l') %}
+
+                {% if lowestCount is null or count < lowestCount %} {% set lowestCount=count %} {% set
+                    worstDaysCurrent=[{'day': dayName, 'count' : count}] %} {% elseif count==lowestCount %} {% set
+                    worstDaysCurrent=worstDaysCurrent|merge([{'day': dayName, 'count' : count}]) %} {% endif %} {%
+                    endfor %} {# Find the worst days of the week for the previous period #} {% set worstDaysPrevious=[]
+                    %} {% set lowestCountPrevious=null %} {% for i in 0..(previousPeriodData.datasets[0].data|length -
+                    1) %} {% set count=previousPeriodData.datasets[0].data[i] %} {% set
+                    date=previousPeriodData.labels[i] %} {% set dayName=date|date('l') %} {% if lowestCountPrevious is
+                    null or count < lowestCountPrevious %} {% set lowestCountPrevious=count %} {% set
+                    worstDaysPrevious=[{'day': dayName, 'count' : count}] %} {% elseif count==lowestCountPrevious %} {%
+                    set worstDaysPrevious=worstDaysPrevious|merge([{'day': dayName, 'count' : count}]) %} {% endif %} {%
+                    endfor %} {# Ensure both periods have the same number of days for comparison #} {% set
+                    previousDaysCount=previousPeriodData.datasets[0].data|length %} {% set
+                    currentDaysCount=chartData.datasets[0].data|length %} {% if previousDaysCount> currentDaysCount %}
+                    {% set worstDaysPrevious = worstDaysPrevious|slice(0, currentDaysCount) %}
+                    {% endif %}
+
+                    {# Generate smart tip #}
+                    {% set smartTip %}
+                    {% if worstDaysCurrent|length > 0 %}
+                    {% if worstDaysCurrent|length == totalDays %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.all_equal'|trans({'%count%':
+                    worstDaysCurrent[0].count}) }}
+                    {% else %}
+                    {% set worstDaysString = worstDaysCurrent|map(day => day.day)|join(', ') %}
+                    {% if worstDaysCurrent[0].count == 0 %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.zero_days'|trans({'%days%': worstDaysString,
+                    '%count%': worstDaysCurrent|length}) }}
+                    {% else %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.identified'|trans({'%days%': worstDaysString,
+                    '%count%': worstDaysCurrent[0].count}) }}
+                    {% endif %}
+                    {% endif %}
+                    {% else %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.no_data'|trans }}
+                    {% endif %}
+                    {% endset %}
+
+                    {# Generate comparison tip #}
+                    {% set comparisonTip %}
+                    {% if worstDaysCurrent|length > 0 and worstDaysPrevious|length > 0 %}
+                    {% if worstDaysCurrent|length == 1 and worstDaysPrevious|length == 1 %}
+                    {% if worstDaysCurrent[0].day == worstDaysPrevious[0].day %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.same_single'|trans({'%day%':
+                    worstDaysCurrent[0].day}) }}
+                    {% else %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.changed_single'|trans({'%currentDay%':
+                    worstDaysCurrent[0].day, '%previousDay%': worstDaysPrevious[0].day}) }}
+                    {% endif %}
+                    {% else %}
+                    {% set currentCount = worstDaysCurrent|length %}
+                    {% set previousCount = worstDaysPrevious|length %}
+                    {% if currentCount == previousCount %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.same_count'|trans({'%count%': currentCount}) }}
+                    {% else %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.changed_count'|trans({'%currentCount%':
+                    currentCount, '%previousCount%': previousCount}) }}
+                    {% endif %}
+                    {% endif %}
+                    {% elseif worstDaysCurrent|length > 0 %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.new_worst_days'|trans({'%count%':
+                    worstDaysCurrent|length}) }}
+                    {% elseif worstDaysPrevious|length > 0 %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.improved'|trans }}
+                    {% else %}
+                    {{ 'mautic.widget.created_leads_in_time.worst_day.no_comparison'|trans }}
+                    {% endif %}
+                    {% endset %}
+
+                    {# Display the smart tip and comparison tip #}
+                    <div class="smart-tip">
+                        <p>{{ smartTip }}</p>
+                        <p>{{ comparisonTip }}</p>
+                    </div>
+
+                    <!-- General weekly growth direction -->
+                    {# Calculate the average leads for the first three days #}
+                    {% set firstThreeDaysTotal = 0 %}
+                    {% for i in 0..2 %}
+                    {% set firstThreeDaysTotal = firstThreeDaysTotal + chartData.datasets[0].data[i] %}
+                    {% endfor %}
+                    {% set firstThreeDaysAvg = (firstThreeDaysTotal / 3)|round(0, 'floor') %}
+
+                    {# Calculate the average leads for the last three days #}
+                    {% set lastThreeDaysTotal = 0 %}
+                    {% for i in (chartData.datasets[0].data|length - 3)..(chartData.datasets[0].data|length - 1) %}
+                    {% set lastThreeDaysTotal = lastThreeDaysTotal + chartData.datasets[0].data[i] %}
+                    {% endfor %}
+                    {% set lastThreeDaysAvg = (lastThreeDaysTotal / 3)|round(0, 'floor') %}
+
+                    {# Determine the trend #}
+                    {% set trend %}
+                    {% if lastThreeDaysAvg > firstThreeDaysAvg %}
+                    {{ 'mautic.widget.created_leads_in_time.trend.growth.part1'|trans }}
+                    <i class="ri-arrow-up-line text-success"></i>
+                    {{ 'mautic.widget.created_leads_in_time.trend.growth.part2'|trans({'%firstAvg%': firstThreeDaysAvg,
+                    '%lastAvg%': lastThreeDaysAvg}) }}
+                    {% elseif lastThreeDaysAvg < firstThreeDaysAvg %}
+                        {{ 'mautic.widget.created_leads_in_time.trend.decline.part1' |trans }} <i
+                        class="ri-arrow-down-line text-danger"></i>
+                        {{ 'mautic.widget.created_leads_in_time.trend.decline.part2'|trans({'%firstAvg%':
+                        firstThreeDaysAvg, '%lastAvg%': lastThreeDaysAvg}) }}
+                        {% else %}
+                        {{ 'mautic.widget.created_leads_in_time.trend.stability'|trans({'%avg%': firstThreeDaysAvg}) }}
+                        {% endif %}
+                        {% endset %}
+
+                        {# Display the trend #}
+                        <div id="weekly-growth-trend">
+                            <p>{{ trend }}</p>
+                        </div>
+
+            </div>
+            {% endif %}
+
+            <!--/ Ends MI content -->
+            <hr>
+            <div class="text-muted">{{'mautic.widget.created_leads_in_time.mi.footer'|trans}}</div>
+        </div>
+    </ul>
+    </div>
+    <!--/ Ends dropdown -->
+
+    <div class="chart-wrapper">
+        <div class="pt-sd pr-md pb-md pl-md">
+            <div {% if chartHeight is defined %} style="height:{{ chartHeight }}px" {% endif %}>
+                <canvas class="chart {{ chartType }}-chart" {{ disableLegend is defined ? 'data-disable-legend' : '' }}>
+                    {{ chartData|json_encode }}
+                </canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- No data info -->
+    {% else %}
+    <div class="col-xs-12">
+        <div class="d-flex ai-center jc-center gap-xs text-disabled h-256">
+            <i class="ri-bar-chart-grouped-line ri-xl"></i>
+            <div class="fw-sb">{{'mautic.dashboard.widget.no_data'|trans}}</div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}

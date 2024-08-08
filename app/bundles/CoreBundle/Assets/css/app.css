@@ -978,8 +978,7 @@ hr,
 .hr-expand {
   margin-top: 15px;
   margin-bottom: 15px;
-  border: 0;
-  border-top: 0;
+  width: 100%;
 }
 hr.hr-w-2,
 .hr-expand.hr-w-2 {
@@ -1314,6 +1313,9 @@ a.text-google:hover,
 a.text-google:focus {
   color: #c23321;
 }
+.text-disabled {
+  color: var(--text-disabled);
+}
 blockquote {
   padding-left: 40px;
   border-width: 0px;
@@ -1440,6 +1442,122 @@ code {
 }
 .btn-info:hover {
   color: #3c4650;
+}
+.slug-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  color: var(--text-primary, #161616);
+  font-weight: 600;
+  transition: var(--transition-all-productive);
+  line-height: normal;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+.slug-button:hover {
+  outline: 2px solid transparent;
+}
+.slug-button:active,
+.slug-button.active,
+.slug-button:focus,
+.slug-button.focus {
+  outline: 2px solid var(--focus);
+}
+.slug-button.slug-default {
+  justify-content: center;
+  border: 1px solid var(--border-inverse, #161616);
+  aspect-ratio: 1/1;
+}
+.slug-button.slug-default:hover {
+  background: var(--border-inverse, #161616);
+  color: var(--text-inverse, #ffffff);
+}
+.slug-button.slug-default[size="mini"] {
+  height: 16px;
+  font-size: 9px;
+}
+.slug-button.slug-default[size="2xs"] {
+  height: 20px;
+  font-size: 12px;
+}
+.slug-button.slug-default[size="xs"] {
+  height: 24px;
+  font-size: 12px;
+}
+.slug-button.slug-default[size="sm"] {
+  height: 32px;
+  font-size: 16px;
+}
+.slug-button.slug-default[size="md"] {
+  height: 40px;
+  font-size: 16px;
+}
+.slug-button.slug-default[size="lg"] {
+  height: 48px;
+  font-size: 16px;
+}
+.slug-button.slug-default[size="xl"] {
+  height: 64px;
+  font-size: 20px;
+}
+.slug-button.slug-inline {
+  border: 1px solid transparent;
+  border-radius: 0.0625rem;
+  background: transparent;
+  block-size: initial;
+  color: var(--text-primary, #161616);
+  font-size: 0.875rem;
+  inline-size: initial;
+  line-height: initial;
+  padding-inline: 0.25rem;
+}
+.slug-button.slug-inline:hover {
+  border-color: var(--icon-secondary, #525252);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary, #525252);
+}
+.slug-button.slug-inline:before {
+  position: absolute;
+  display: inline-block;
+  background: var(--icon-primary, #161616);
+  block-size: 0.25rem;
+  content: "";
+  inline-size: 0.25rem;
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  opacity: 1;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+  transition: var(--transition-all-productive);
+}
+.slug-button.slug-inline:before:hover {
+  background: var(--icon-secondary, #525252);
+}
+.slug-button.slug-inline[size="sm"] {
+  height: 16px;
+  font-size: 12px;
+}
+.slug-button.slug-inline[size="md"] {
+  height: 18px;
+  font-size: 14px;
+}
+.slug-button.slug-inline[size="lg"] {
+  height: 22px;
+  font-size: 16px;
+}
+.slug-button.slug-inline[size="lg"]:before {
+  block-size: 0.5rem;
+  inline-size: 0.5rem;
+}
+.slug-button.slug-content {
+  border: 1px solid var(--border-inverse, #161616);
+  padding-block: 0.125rem;
+  padding-inline: 0.5rem;
+}
+.slug-button.slug-content .slug-additional-text {
+  font-weight: normal;
 }
 .btn-group .btn ~ .btn,
 .btn-group .btn ~ .btn-group,
@@ -6947,6 +7065,21 @@ a.inline-token .text-muted {
 .tile.tile-selectable .tile-icon {
   inset-block-end: var(--layout-density-padding-inline-local);
 }
+.tile.tile-slug {
+  background: linear-gradient(to top, var(--layer, var(--mi-popover-background, #ffffff)) 0%, var(--mi-aura-start, rgba(69, 137, 255, 0.1)) 0%, 15%, var(--mi-aura-end, rgba(255, 255, 255, 0)) 50%) padding-box, linear-gradient(to top, var(--layer, var(--mi-popover-background, #ffffff)), var(--layer, var(--mi-popover-background, #ffffff))) padding-box, linear-gradient(to bottom, var(--mi-border-start, rgba(166, 200, 255, 0.64)), var(--mi-border-end, #78a9ff)) border-box, linear-gradient(to top, var(--layer, var(--mi-popover-background, #ffffff)), var(--layer, var(--mi-popover-background, #ffffff))) border-box;
+  border: 1px solid transparent;
+  box-shadow: inset 0 -80px 70px -65px var(--mi-inner-shadow, rgba(69, 137, 255, 0.1)), 0 4px 8px 0 var(--mi-drop-shadow, rgba(15, 98, 254, 0.1));
+}
+.tile.tile-popover {
+  --layout-density-padding-inline-local: 24px;
+  background: linear-gradient(to top, var(--mi-popover-background, var(--mi-popover-background, #ffffff)) 0%, var(--mi-aura-start, rgba(69, 137, 255, 0.1)) 0%, 15%, var(--mi-aura-end, rgba(255, 255, 255, 0)) 50%) padding-box, linear-gradient(to top, var(--mi-popover-background, var(--mi-popover-background, #ffffff)), var(--mi-popover-background, var(--mi-popover-background, #ffffff))) padding-box, linear-gradient(to bottom, var(--mi-border-start, rgba(166, 200, 255, 0.64)), var(--mi-border-end, #78a9ff)) border-box, linear-gradient(to top, var(--mi-popover-background, var(--mi-popover-background, #ffffff)), var(--mi-popover-background, var(--mi-popover-background, #ffffff))) border-box;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  width: 320px;
+  box-shadow: inset 0 -80px 70px -65px var(--mi-inner-shadow, rgba(69, 137, 255, 0.1)), -40px 44px 60px -24px var(--mi-popover-shadow-outer-01, rgba(0, 67, 206, 0.06)), -56px 64px 64px -24px var(--mi-popover-shadow-outer-02, rgba(0, 0, 0, 0.04));
+  color: var(--text-primary, #161616);
+  min-inline-size: 17.5rem;
+}
 .tile.tile-clickable {
   color: var(--text-primary, #161616);
   text-decoration: none;
@@ -6970,6 +7103,9 @@ a.inline-token .text-muted {
 .nav-tabs-contained + .tab-content .tile.tile-clickable:hover,
 .nav-tabs-contained + .tab-content .tile.tile-selectable:hover {
   background: var(--layer-hover-alternate);
+}
+.dropdown-menu:has(.tile) {
+  background-color: transparent;
 }
 @media (min-width: 992px) {
   .modal-xl {
@@ -7492,6 +7628,8 @@ ul.media-list.media-list-feed div.media-body {
   --overlay: #161616;
   --skeleton-element: #525252;
   --skeleton-background: #353535;
+  --white: #fff;
+  --black: #000;
   --label-background-gray: #525252;
   --label-color-gray: #e0e0e0;
   --label-background-hover-gray: #636363;
@@ -7532,6 +7670,23 @@ ul.media-list.media-list-feed div.media-body {
   --label-color-green: #a7f0ba;
   --label-background-hover-green: #11742f;
   --label-border-green: #24a148;
+  --mi-aura-start: rgba(106, 121, 181, 0.1);
+  --mi-aura-start-sm: rgba(106, 121, 181, 0.16);
+  --mi-aura-end: var(--white);
+  --mi-aura-hover-start: rgba(106, 121, 181, 0.32);
+  --mi-aura-hover-end: var(--white);
+  --mi-aura-hover-background: #f2f4f9;
+  --mi-border-start: rgba(174, 182, 215, 0.64);
+  --mi-border-end: #8c98c6;
+  --mi-border-strong: #6a79b5;
+  --mi-drop-shadow: rgba(78, 94, 158, 0.1);
+  --mi-inner-shadow: rgba(106, 121, 181, 0.1);
+  --mi-popover-background: var(--white);
+  --mi-popover-shadow-outer-01: rgba(61, 74, 124, 0.06);
+  --mi-popover-shadow-outer-02: #00000A;
+  --mi-skeleton-element: #6a79b5;
+  --mi-skeleton-background: #d0d5e8;
+  --mi-overlay: rgba(11, 13, 21, 0.5);
 }
 :root {
   --primary-20: #d0d5e8;
